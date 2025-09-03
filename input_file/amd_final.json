@@ -1,0 +1,18 @@
+[
+    {
+        "amd_num":100,
+        "amd_desc":"ABC Services",
+        "last_sign_date":"2024-01-15",
+        "amd_effec_date":"2024-01-25",
+        "amd_start_date":"2024-01-30",
+        "svc_exp_date":"2027-01-15"
+    },
+    {
+        "amd_num":100,
+        "amd_desc":"ABC Services",
+        "last_sign_date":"2024-01-15",
+        "amd_effec_date":"2024-01-25",
+        "amd_start_date":"2024-01-30",
+        "svc_exp_date":"2027-01-15"
+    }
+]
