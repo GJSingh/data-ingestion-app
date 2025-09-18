@@ -1,27 +1,77 @@
-# Data Ingestion API (PostgreSQL + Docker)
+# Data Ingestion API (PostgreSQL + Docker) - Consolidated Schema
 
-Node.js/Express API that ingests JSON files into PostgreSQL and serves the data via REST endpoints.
+Node.js/Express API that ingests consolidated JSON files into PostgreSQL and serves the data via REST endpoints.
 
 ## Features
 
-- PostgreSQL-backed storage (JSONB)
+- PostgreSQL-backed storage (JSONB) with consolidated schema
 - Auto table creation and initial data load on first run
 - CORS + Helmet enabled
 - Dockerfile + docker-compose for local stack
 - Health check and simple search endpoint
+- Consolidated data structure with time-series data
+
+## Database Schema
+
+Tables created automatically on startup:
+
+- `consolidated_charge (id SERIAL, data JSONB, created_at TIMESTAMP, updated_at TIMESTAMP)`
+- `consolidated_rate (id SERIAL, data JSONB, created_at TIMESTAMP, updated_at TIMESTAMP)`
+- `consolidated_volume (id SERIAL, data JSONB, created_at TIMESTAMP, updated_at TIMESTAMP)`
+
+Indexes on `created_at` for each table.
+
+## Data Structure
+
+Each consolidated file contains records with:
+
+- `amd_num`: Amendment number
+- `amd_start_date`: Amendment start date
+- `ru`: Resource unit description
+- `ru_status`: Resource unit status
+- Time-series data with monthly timestamps as keys (e.g., "2025-01-01T00:00:00.000")
+
+Example structure:
+
+```json
+{
+  "amd_num": 125.1,
+  "amd_start_date": "2025-01-01T00:00:00.000",
+  "ru": "new ru data (sdsdsd)",
+  "ru_status": "Existing",
+  "2025-01-01T00:00:00.000": 0.0,
+  "2025-02-01T00:00:00.000": 0.0,
+  "2025-03-01T00:00:00.000": 0.0
+}
+```
 
 ## Environment Variables (.env)
 
-Create a UTF-8 encoded `.env` (no BOM) in the project root:
+Create a UTF-8 encoded `.env` (no BOM) in the project root. Choose ONE of the setups:
+
+Compose (run both app and DB with docker compose):
 
 ```
-DB_HOST=postgres            # use 'postgres' inside docker compose; 'localhost' if app runs locally
-DB_PORT=5432               # 5432 in compose; host port (e.g., 5433) if running only DB in a container
+DB_HOST=postgres
+DB_PORT=5432
 DB_NAME=data_ingest_db
 DB_USER=postgres
 DB_PASSWORD=postgres
 PORT=3000
 NODE_ENV=production
+ALLOWED_ORIGINS=*
+```
+
+Local app + DB in container on host port 5433:
+
+```
+DB_HOST=localhost
+DB_PORT=5433
+DB_NAME=data_ingest_db
+DB_USER=postgres
+DB_PASSWORD=postgres
+PORT=3000
+NODE_ENV=development
 ALLOWED_ORIGINS=*
 ```
 
@@ -45,8 +95,9 @@ This starts:
 2. Verify
 
 - API health: http://localhost:3000/health
-- Data: http://localhost:3000/amd_final, `/data_final`, `/ru_final`
-- Search: `GET /search/:table/:term` (tables: `amd_final`, `data_final`, `ru_final`)
+- Consolidated data: http://localhost:3000/consolidated_charge, `/consolidated_rate`, `/consolidated_volume`
+- Ingestion/annual data: http://localhost:3000/ingestion_volume, `/ingestion_charge`, `/ingestion_rate`, `/annual_charge`
+- Search: `GET /search/:table/:term` (tables: `consolidated_charge`, `consolidated_rate`, `consolidated_volume`, `ingestion_volume`, `ingestion_charge`, `ingestion_rate`, `annual_charge`)
 
 3. Logs
 
@@ -109,18 +160,26 @@ Commands inside psql:
 
 ```
 \dt
-SELECT COUNT(*) FROM amd_final;
-SELECT COUNT(*) FROM data_final;
-SELECT COUNT(*) FROM ru_final;
-SELECT id, created_at, data FROM amd_final LIMIT 5;
+SELECT COUNT(*) FROM consolidated_charge;
+SELECT COUNT(*) FROM consolidated_rate;
+SELECT COUNT(*) FROM consolidated_volume;
+SELECT COUNT(*) FROM ingestion_volume;
+SELECT COUNT(*) FROM ingestion_charge;
+SELECT COUNT(*) FROM ingestion_rate;
+SELECT COUNT(*) FROM annual_charge;
+SELECT id, created_at, data FROM ingestion_volume LIMIT 5;
 ```
 
 ## API
 
 - `GET /health` – status + record counts
-- `GET /amd_final` – all rows
-- `GET /data_final` – all rows
-- `GET /ru_final` – all rows
+- `GET /consolidated_charge` – consolidated charge (supports filters)
+- `GET /consolidated_rate` – consolidated rate (supports filters)
+- `GET /consolidated_volume` – consolidated volume (supports filters)
+- `GET /ingestion_volume` – ingestion volume (supports filters)
+- `GET /ingestion_charge` – ingestion charge (supports filters)
+- `GET /ingestion_rate` – ingestion rate (supports filters)
+- `GET /annual_charge` – annual charge (supports filters)
 - `GET /search/:table/:term` – ILIKE against JSON text
 
 Response shape
@@ -141,6 +200,28 @@ Response shape
 }
 ```
 
+### Filtering
+
+All list endpoints accept these optional query parameters:
+
+- `amd_num` (partial match)
+- `ru` (partial match)
+- `ru_status` (partial match)
+- `created_from`, `created_to` (ISO date)
+- `updated_from`, `updated_to` (ISO date)
+- `limit` (default 100, max 1000)
+- `offset` (default 0)
+- `order_by` (`created_at` or `updated_at`, default `created_at`)
+- `order_dir` (`ASC` or `DESC`, default `DESC`)
+
+Examples:
+
+```
+GET /ingestion_volume?ru=network&ru_status=Existing&limit=50
+GET /annual_charge?amd_num=125.1&created_from=2025-01-01T00:00:00.000Z
+GET /consolidated_rate?order_by=updated_at&order_dir=ASC&offset=100
+```
+
 ## Troubleshooting
 
 - Port 3000 in use:
@@ -151,6 +232,8 @@ Response shape
   - Run as Administrator, ensure `com.docker.service` is running, enable WSL2 backend, try Troubleshoot → Reset to factory defaults
 - `.env` encoding error:
   - Recreate `.env` as UTF-8 (without BOM)
+- Compose warning about `version` key:
+  - Safe to remove the `version` line from `docker-compose.yml` on recent Docker Compose
 
 ## Development
 

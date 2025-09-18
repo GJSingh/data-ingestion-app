@@ -4,24 +4,24 @@ const path = require('path');
 
 // SQL statements for creating tables
 const createTablesSQL = `
--- Create amd_final table
-CREATE TABLE IF NOT EXISTS amd_final (
+-- Create consolidated_charge table
+CREATE TABLE IF NOT EXISTS consolidated_charge (
     id SERIAL PRIMARY KEY,
     data JSONB NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create data_final table
-CREATE TABLE IF NOT EXISTS data_final (
+-- Create consolidated_rate table
+CREATE TABLE IF NOT EXISTS consolidated_rate (
     id SERIAL PRIMARY KEY,
     data JSONB NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create ru_final table
-CREATE TABLE IF NOT EXISTS ru_final (
+-- Create consolidated_volume table
+CREATE TABLE IF NOT EXISTS consolidated_volume (
     id SERIAL PRIMARY KEY,
     data JSONB NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -29,9 +29,41 @@ CREATE TABLE IF NOT EXISTS ru_final (
 );
 
 -- Create indexes for better performance
-CREATE INDEX IF NOT EXISTS idx_amd_final_created_at ON amd_final(created_at);
-CREATE INDEX IF NOT EXISTS idx_data_final_created_at ON data_final(created_at);
-CREATE INDEX IF NOT EXISTS idx_ru_final_created_at ON ru_final(created_at);
+CREATE INDEX IF NOT EXISTS idx_consolidated_charge_created_at ON consolidated_charge(created_at);
+CREATE INDEX IF NOT EXISTS idx_consolidated_rate_created_at ON consolidated_rate(created_at);
+CREATE INDEX IF NOT EXISTS idx_consolidated_volume_created_at ON consolidated_volume(created_at);
+-- Create ingestion_volume table
+CREATE TABLE IF NOT EXISTS ingestion_volume (
+    id SERIAL PRIMARY KEY,
+    data JSONB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_ingestion_volume_created_at ON ingestion_volume(created_at);
+-- Create ingestion_charge table
+CREATE TABLE IF NOT EXISTS ingestion_charge (
+    id SERIAL PRIMARY KEY,
+    data JSONB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_ingestion_charge_created_at ON ingestion_charge(created_at);
+-- Create ingestion_rate table
+CREATE TABLE IF NOT EXISTS ingestion_rate (
+    id SERIAL PRIMARY KEY,
+    data JSONB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_ingestion_rate_created_at ON ingestion_rate(created_at);
+-- Create annual_charge table
+CREATE TABLE IF NOT EXISTS annual_charge (
+    id SERIAL PRIMARY KEY,
+    data JSONB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_annual_charge_created_at ON annual_charge(created_at);
 `;
 
 // Function to initialize database
@@ -55,22 +87,46 @@ async function initializeDatabase() {
 // Function to load data from JSON files if tables are empty
 async function loadDataIfEmpty() {
     try {
-        // Check if amd_final table is empty
-        const amdCount = await pool.query('SELECT COUNT(*) FROM amd_final');
-        if (parseInt(amdCount.rows[0].count) === 0) {
-            await loadAmdData();
+        // Check if consolidated_charge table is empty
+        const chargeCount = await pool.query('SELECT COUNT(*) FROM consolidated_charge');
+        if (parseInt(chargeCount.rows[0].count) === 0) {
+            await loadConsolidatedCharge();
         }
 
-        // Check if data_final table is empty
-        const dataCount = await pool.query('SELECT COUNT(*) FROM data_final');
-        if (parseInt(dataCount.rows[0].count) === 0) {
-            await loadDataFinal();
+        // Check if consolidated_rate table is empty
+        const rateCount = await pool.query('SELECT COUNT(*) FROM consolidated_rate');
+        if (parseInt(rateCount.rows[0].count) === 0) {
+            await loadConsolidatedRate();
         }
 
-        // Check if ru_final table is empty
-        const ruCount = await pool.query('SELECT COUNT(*) FROM ru_final');
-        if (parseInt(ruCount.rows[0].count) === 0) {
-            await loadRuData();
+        // Check if consolidated_volume table is empty
+        const volumeCount = await pool.query('SELECT COUNT(*) FROM consolidated_volume');
+        if (parseInt(volumeCount.rows[0].count) === 0) {
+            await loadConsolidatedVolume();
+        }
+
+        // New: ingestion_volume
+        const ingestionVolumeCount = await pool.query('SELECT COUNT(*) FROM ingestion_volume');
+        if (parseInt(ingestionVolumeCount.rows[0].count) === 0) {
+            await loadIngestionVolume();
+        }
+
+        // New: ingestion_charge
+        const ingestionChargeCount = await pool.query('SELECT COUNT(*) FROM ingestion_charge');
+        if (parseInt(ingestionChargeCount.rows[0].count) === 0) {
+            await loadIngestionCharge();
+        }
+
+        // New: ingestion_rate
+        const ingestionRateCount = await pool.query('SELECT COUNT(*) FROM ingestion_rate');
+        if (parseInt(ingestionRateCount.rows[0].count) === 0) {
+            await loadIngestionRate();
+        }
+
+        // New: annual_charge
+        const annualChargeCount = await pool.query('SELECT COUNT(*) FROM annual_charge');
+        if (parseInt(annualChargeCount.rows[0].count) === 0) {
+            await loadAnnualCharge();
         }
 
         console.log('✅ Data loading completed');
@@ -79,60 +135,120 @@ async function loadDataIfEmpty() {
     }
 }
 
-// Load AMD data
-async function loadAmdData() {
+// Load Consolidated Charge data
+async function loadConsolidatedCharge() {
     try {
         const inputDir = path.join(__dirname, 'input_file');
-        const amdContent = await fs.readFile(path.join(inputDir, 'amd_final.json'), 'utf8');
-        const amdData = JSON.parse(amdContent);
+        const chargeContent = await fs.readFile(path.join(inputDir, 'consolidated_charge.json'), 'utf8');
+        const chargeData = JSON.parse(chargeContent);
         
-        for (const record of amdData) {
+        for (const record of chargeData) {
             await pool.query(
-                'INSERT INTO amd_final (data) VALUES ($1)',
+                'INSERT INTO consolidated_charge (data) VALUES ($1)',
                 [JSON.stringify(record)]
             );
         }
-        console.log(`✅ Loaded ${amdData.length} records into amd_final table`);
+        console.log(`✅ Loaded ${chargeData.length} records into consolidated_charge table`);
     } catch (error) {
-        console.warn('⚠️ Could not load amd_final.json:', error.message);
+        console.warn('⚠️ Could not load consolidated_charge.json:', error.message);
     }
 }
 
-// Load Data Final
-async function loadDataFinal() {
+// Load Consolidated Rate data
+async function loadConsolidatedRate() {
     try {
         const inputDir = path.join(__dirname, 'input_file');
-        const dataContent = await fs.readFile(path.join(inputDir, 'data_final.json'), 'utf8');
-        const dataFinal = JSON.parse(dataContent);
+        const rateContent = await fs.readFile(path.join(inputDir, 'consolidated_rate.json'), 'utf8');
+        const rateData = JSON.parse(rateContent);
         
-        for (const record of dataFinal) {
+        for (const record of rateData) {
             await pool.query(
-                'INSERT INTO data_final (data) VALUES ($1)',
+                'INSERT INTO consolidated_rate (data) VALUES ($1)',
                 [JSON.stringify(record)]
             );
         }
-        console.log(`✅ Loaded ${dataFinal.length} records into data_final table`);
+        console.log(`✅ Loaded ${rateData.length} records into consolidated_rate table`);
     } catch (error) {
-        console.warn('⚠️ Could not load data_final.json:', error.message);
+        console.warn('⚠️ Could not load consolidated_rate.json:', error.message);
     }
 }
 
-// Load RU data
-async function loadRuData() {
+// Load Consolidated Volume data
+async function loadConsolidatedVolume() {
     try {
         const inputDir = path.join(__dirname, 'input_file');
-        const ruContent = await fs.readFile(path.join(inputDir, 'ru_final.json'), 'utf8');
-        const ruData = ruContent.trim() ? JSON.parse(ruContent) : [];
+        const volumeContent = await fs.readFile(path.join(inputDir, 'consolidated_volume.json'), 'utf8');
+        const volumeData = JSON.parse(volumeContent);
         
-        for (const record of ruData) {
+        for (const record of volumeData) {
             await pool.query(
-                'INSERT INTO ru_final (data) VALUES ($1)',
+                'INSERT INTO consolidated_volume (data) VALUES ($1)',
                 [JSON.stringify(record)]
             );
         }
-        console.log(`✅ Loaded ${ruData.length} records into ru_final table`);
+        console.log(`✅ Loaded ${volumeData.length} records into consolidated_volume table`);
     } catch (error) {
-        console.warn('⚠️ Could not load ru_final.json:', error.message);
+        console.warn('⚠️ Could not load consolidated_volume.json:', error.message);
+    }
+}
+
+// Load Ingestion Volume data
+async function loadIngestionVolume() {
+    try {
+        const inputDir = path.join(__dirname, 'input_file');
+        const content = await fs.readFile(path.join(inputDir, 'ingestion_volume.json'), 'utf8');
+        const rows = JSON.parse(content);
+        for (const record of rows) {
+            await pool.query('INSERT INTO ingestion_volume (data) VALUES ($1)', [JSON.stringify(record)]);
+        }
+        console.log(`✅ Loaded ${rows.length} records into ingestion_volume table`);
+    } catch (error) {
+        console.warn('⚠️ Could not load ingestion_volume.json:', error.message);
+    }
+}
+
+// Load Ingestion Charge data
+async function loadIngestionCharge() {
+    try {
+        const inputDir = path.join(__dirname, 'input_file');
+        const content = await fs.readFile(path.join(inputDir, 'ingestion_charge.json'), 'utf8');
+        const rows = JSON.parse(content);
+        for (const record of rows) {
+            await pool.query('INSERT INTO ingestion_charge (data) VALUES ($1)', [JSON.stringify(record)]);
+        }
+        console.log(`✅ Loaded ${rows.length} records into ingestion_charge table`);
+    } catch (error) {
+        console.warn('⚠️ Could not load ingestion_charge.json:', error.message);
+    }
+}
+
+// Load Ingestion Rate data
+async function loadIngestionRate() {
+    try {
+        const inputDir = path.join(__dirname, 'input_file');
+        const content = await fs.readFile(path.join(inputDir, 'ingestion_rate.json'), 'utf8');
+        const rows = JSON.parse(content);
+        for (const record of rows) {
+            await pool.query('INSERT INTO ingestion_rate (data) VALUES ($1)', [JSON.stringify(record)]);
+        }
+        console.log(`✅ Loaded ${rows.length} records into ingestion_rate table`);
+    } catch (error) {
+        console.warn('⚠️ Could not load ingestion_rate.json:', error.message);
+    }
+}
+
+// Load Annual Charge data
+async function loadAnnualCharge() {
+    try {
+        const inputDir = path.join(__dirname, 'input_file');
+        const content = await fs.readFile(path.join(inputDir, 'annual_charge.json'), 'utf8');
+        const rows = JSON.parse(content);
+        for (const record of rows) {
+            await pool.query('INSERT INTO annual_charge (data) VALUES ($1)', [JSON.stringify(record)]);
+        }
+        console.log(`✅ Loaded ${rows.length} records into annual_charge table`);
+    } catch (error) {
+        console.warn('⚠️ Could not load annual_charge.json:', error.message);
     }
 }
 
@@ -172,10 +288,65 @@ async function searchRecords(tableName, searchTerm) {
     }
 }
 
+// Build filtered query against JSONB data + timestamps
+function buildFilterQuery(tableName, filters, pagination) {
+    const where = [];
+    const values = [];
+    let i = 1;
+
+    if (filters.amd_num !== undefined) {
+        where.push(`(data->>'amd_num')::text ILIKE $${i++}`);
+        values.push(`%${filters.amd_num}%`);
+    }
+    if (filters.ru) {
+        where.push(`(data->>'ru') ILIKE $${i++}`);
+        values.push(`%${filters.ru}%`);
+    }
+    if (filters.ru_status) {
+        where.push(`(data->>'ru_status') ILIKE $${i++}`);
+        values.push(`%${filters.ru_status}%`);
+    }
+    if (filters.created_from) {
+        where.push(`created_at >= $${i++}`);
+        values.push(filters.created_from);
+    }
+    if (filters.created_to) {
+        where.push(`created_at <= $${i++}`);
+        values.push(filters.created_to);
+    }
+    if (filters.updated_from) {
+        where.push(`updated_at >= $${i++}`);
+        values.push(filters.updated_from);
+    }
+    if (filters.updated_to) {
+        where.push(`updated_at <= $${i++}`);
+        values.push(filters.updated_to);
+    }
+
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    const limit = Math.min(Math.max(parseInt(pagination.limit || 100, 10), 1), 1000);
+    const offset = Math.max(parseInt(pagination.offset || 0, 10), 0);
+    const orderBy = pagination.order_by === 'created_at' || pagination.order_by === 'updated_at' ? pagination.order_by : 'created_at';
+    const orderDir = pagination.order_dir && pagination.order_dir.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+    const countSql = `SELECT COUNT(*) FROM ${tableName} ${whereSql}`;
+    const dataSql = `SELECT * FROM ${tableName} ${whereSql} ORDER BY ${orderBy} ${orderDir} LIMIT ${limit} OFFSET ${offset}`;
+
+    return { countSql, dataSql, values };
+}
+
+async function queryWithFilters(tableName, filters = {}, pagination = {}) {
+    const { countSql, dataSql, values } = buildFilterQuery(tableName, filters, pagination);
+    const countRes = await pool.query(countSql, values);
+    const dataRes = await pool.query(dataSql, values);
+    return { count: parseInt(countRes.rows[0].count), rows: dataRes.rows };
+}
+
 module.exports = {
     pool,
     initializeDatabase,
     getAllRecords,
     getRecordCount,
-    searchRecords
+    searchRecords,
+    queryWithFilters
 };
