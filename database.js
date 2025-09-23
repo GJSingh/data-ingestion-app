@@ -135,6 +135,56 @@ async function loadDataIfEmpty() {
     }
 }
 
+// Normalize consolidated JSON rows where keys look like
+// "('amd_num','','','')" or "(4, 40, 2025, 'January')"
+function normalizeConsolidatedRow(raw) {
+const normalized = {};
+const monthly = {};
+
+const monthIndex = {
+January: '01', February: '02', March: '03', April: '04', May: '05', June: '06',
+July: '07', August: '08', September: '09', October: '10', November: '11', December: '12'
+};
+
+for (const [key, value] of Object.entries(raw)) {
+const simple = key.replace(/\s+/g, '');
+if (simple.includes("('amd_num','','','')")) {
+normalized.amd_num = value;
+continue;
+}
+if (simple.includes("('amd_start_date','','','')")) {
+normalized.amd_start_date = value;
+continue;
+}
+if (simple.includes("('ru','','','')")) {
+normalized.ru = value;
+continue;
+}
+if (simple.includes("('ru_status','','','')")) {
+normalized.ru_status = value;
+continue;
+}
+
+// Match tuple-like keys: (x, y, 2025, 'January')
+const match = key.match(/^\(\s*\d+\s*,\s*\d+\s*,\s*(\d{4})\s*,\s*'([A-Za-z]+)'\s*\)$/);
+if (match) {
+const year = match[1];
+const monthName = match[2];
+const mm = monthIndex[monthName];
+if (mm) {
+const ym = `${year}-${mm}`;
+monthly[ym] = value;
+}
+}
+}
+
+if (Object.keys(monthly).length) {
+normalized.monthly = monthly;
+}
+
+return normalized;
+}
+
 // Load Consolidated Charge data
 async function loadConsolidatedCharge() {
     try {
@@ -143,9 +193,10 @@ async function loadConsolidatedCharge() {
         const chargeData = JSON.parse(chargeContent);
         
         for (const record of chargeData) {
+            const normalized = normalizeConsolidatedRow(record);
             await pool.query(
                 'INSERT INTO consolidated_charge (data) VALUES ($1)',
-                [JSON.stringify(record)]
+                [JSON.stringify(normalized)]
             );
         }
         console.log(`✅ Loaded ${chargeData.length} records into consolidated_charge table`);
@@ -162,9 +213,10 @@ async function loadConsolidatedRate() {
         const rateData = JSON.parse(rateContent);
         
         for (const record of rateData) {
+            const normalized = normalizeConsolidatedRow(record);
             await pool.query(
                 'INSERT INTO consolidated_rate (data) VALUES ($1)',
-                [JSON.stringify(record)]
+                [JSON.stringify(normalized)]
             );
         }
         console.log(`✅ Loaded ${rateData.length} records into consolidated_rate table`);
@@ -181,9 +233,10 @@ async function loadConsolidatedVolume() {
         const volumeData = JSON.parse(volumeContent);
         
         for (const record of volumeData) {
+            const normalized = normalizeConsolidatedRow(record);
             await pool.query(
                 'INSERT INTO consolidated_volume (data) VALUES ($1)',
-                [JSON.stringify(record)]
+                [JSON.stringify(normalized)]
             );
         }
         console.log(`✅ Loaded ${volumeData.length} records into consolidated_volume table`);

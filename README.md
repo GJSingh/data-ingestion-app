@@ -23,27 +23,36 @@ Indexes on `created_at` for each table.
 
 ## Data Structure
 
-Each consolidated file contains records with:
+### Consolidated files (new input format)
 
-- `amd_num`: Amendment number
-- `amd_start_date`: Amendment start date
-- `ru`: Resource unit description
-- `ru_status`: Resource unit status
-- Time-series data with monthly timestamps as keys (e.g., "2025-01-01T00:00:00.000")
+The consolidated JSON files now have raw keys like:
 
-Example structure:
+- "('amd_num','','','')"
+- "('amd_start_date', '', '', '')"
+- "('ru','','','')"
+- "('ru_status', '', '', '')"
+- "(4, 40, 2025, 'January')" for monthly values
+
+On ingestion, the app normalizes each record to a clean structure:
 
 ```json
 {
   "amd_num": 125.1,
   "amd_start_date": "2025-01-01T00:00:00.000",
-  "ru": "new ru data (sdsdsd)",
+  "ru": "Migrant Images (Credit)",
   "ru_status": "Existing",
-  "2025-01-01T00:00:00.000": 0.0,
-  "2025-02-01T00:00:00.000": 0.0,
-  "2025-03-01T00:00:00.000": 0.0
+  "monthly": {
+    "2025-01": 0.0,
+    "2025-02": 0.0,
+    "2025-03": 0.0
+  }
 }
 ```
+
+Notes:
+
+- Month names in tuple keys are mapped to `YYYY-MM` in `monthly`.
+- Unknown keys are ignored.
 
 ## Environment Variables (.env)
 
