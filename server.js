@@ -46,6 +46,10 @@ app.get('/health', async (req, res) => {
                 ingestion_charge: '/ingestion_charge',
                 ingestion_rate: '/ingestion_rate',
                 annual_charge: '/annual_charge',
+                index_consolidated_rus: '/index_consolidated_rus',
+                index_consolidated_amd: '/index_consolidated_amd',
+                index_ingestion_amd: '/index_ingestion_amd',
+                index_ingestion_rus: '/index_ingestion_rus',
                 search: '/search/:table/:term'
             }
         });
@@ -134,13 +138,56 @@ app.get('/annual_charge', async (req, res) => {
     }
 });
 
+// Index Consolidated RUS endpoint
+app.get('/index_consolidated_rus', async (req, res) => {
+    try {
+        const { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to, limit, offset, order_by, order_dir } = req.query;
+        const { count, rows } = await queryWithFilters('index_consolidated_rus', { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to }, { limit, offset, order_by, order_dir });
+        res.json({ success: true, count, data: rows, timestamp: new Date().toISOString() });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error', message: error.message });
+    }
+});
+
+// Index Consolidated AMD endpoint
+app.get('/index_consolidated_amd', async (req, res) => {
+    try {
+        const { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to, limit, offset, order_by, order_dir } = req.query;
+        const { count, rows } = await queryWithFilters('index_consolidated_amd', { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to }, { limit, offset, order_by, order_dir });
+        res.json({ success: true, count, data: rows, timestamp: new Date().toISOString() });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error', message: error.message });
+    }
+});
+
+// Index Ingestion AMD endpoint
+app.get('/index_ingestion_amd', async (req, res) => {
+    try {
+        const { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to, limit, offset, order_by, order_dir } = req.query;
+        const { count, rows } = await queryWithFilters('index_ingestion_amd', { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to }, { limit, offset, order_by, order_dir });
+        res.json({ success: true, count, data: rows, timestamp: new Date().toISOString() });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error', message: error.message });
+    }
+});
+
+// Index Ingestion RUS endpoint
+app.get('/index_ingestion_rus', async (req, res) => {
+    try {
+        const { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to, limit, offset, order_by, order_dir } = req.query;
+        const { count, rows } = await queryWithFilters('index_ingestion_rus', { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to }, { limit, offset, order_by, order_dir });
+        res.json({ success: true, count, data: rows, timestamp: new Date().toISOString() });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error', message: error.message });
+    }
+});
 // Search endpoint
 app.get('/search/:table/:term', async (req, res) => {
     try {
         const { table, term } = req.params;
         
         // Validate table name
-        const validTables = ['consolidated_charge', 'consolidated_rate', 'consolidated_volume', 'ingestion_volume', 'ingestion_charge', 'ingestion_rate', 'annual_charge'];
+        const validTables = ['consolidated_charge', 'consolidated_rate', 'consolidated_volume', 'ingestion_volume', 'ingestion_charge', 'ingestion_rate', 'annual_charge', 'index_consolidated_rus', 'index_consolidated_amd', 'index_ingestion_amd', 'index_ingestion_rus'];
         if (!validTables.includes(table)) {
             return res.status(400).json({
                 success: false,
@@ -184,6 +231,10 @@ app.get('/', (req, res) => {
             consolidated_charge: '/consolidated_charge',
             consolidated_rate: '/consolidated_rate',
             consolidated_volume: '/consolidated_volume',
+            index_consolidated_rus: '/index_consolidated_rus',
+            index_consolidated_amd: '/index_consolidated_amd',
+            index_ingestion_amd: '/index_ingestion_amd',
+            index_ingestion_rus: '/index_ingestion_rus',
             search: '/search/:table/:term'
         },
         documentation: 'Use the endpoints above to access the consolidated JSON data from PostgreSQL database'
@@ -195,7 +246,7 @@ app.use('*', (req, res) => {
     res.status(404).json({
         success: false,
         error: 'Endpoint not found',
-        available_endpoints: ['/health', '/consolidated_charge', '/consolidated_rate', '/consolidated_volume', '/search/:table/:term']
+        available_endpoints: ['/health', '/consolidated_charge', '/consolidated_rate', '/consolidated_volume', '/index_consolidated_rus', '/index_consolidated_amd', '/index_ingestion_amd', '/index_ingestion_rus', '/search/:table/:term']
     });
 });
 
@@ -226,6 +277,10 @@ async function startServer() {
         console.log(`   - Ingestion Charge: http://localhost:${PORT}/ingestion_charge`);
         console.log(`   - Ingestion Rate: http://localhost:${PORT}/ingestion_rate`);
         console.log(`   - Annual Charge: http://localhost:${PORT}/annual_charge`);
+        console.log(`   - Index Consolidated RUS: http://localhost:${PORT}/index_consolidated_rus`);
+        console.log(`   - Index Consolidated AMD: http://localhost:${PORT}/index_consolidated_amd`);
+        console.log(`   - Index Ingestion AMD: http://localhost:${PORT}/index_ingestion_amd`);
+        console.log(`   - Index Ingestion RUS: http://localhost:${PORT}/index_ingestion_rus`);
         console.log(`   - Search: http://localhost:${PORT}/search/:table/:term`);
             console.log(`🗄️  PostgreSQL database connected`);
         });

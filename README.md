@@ -106,6 +106,7 @@ This starts:
 - API health: http://localhost:3000/health
 - Consolidated data: http://localhost:3000/consolidated_charge, `/consolidated_rate`, `/consolidated_volume`
 - Ingestion/annual data: http://localhost:3000/ingestion_volume, `/ingestion_charge`, `/ingestion_rate`, `/annual_charge`
+- Index endpoints: `/index_consolidated_rus`, `/index_consolidated_amd`, `/index_ingestion_amd`, `/index_ingestion_rus`
 - Search: `GET /search/:table/:term` (tables: `consolidated_charge`, `consolidated_rate`, `consolidated_volume`, `ingestion_volume`, `ingestion_charge`, `ingestion_rate`, `annual_charge`)
 
 3. Logs
@@ -189,6 +190,10 @@ SELECT id, created_at, data FROM ingestion_volume LIMIT 5;
 - `GET /ingestion_charge` – ingestion charge (supports filters)
 - `GET /ingestion_rate` – ingestion rate (supports filters)
 - `GET /annual_charge` – annual charge (supports filters)
+- `GET /index_consolidated_rus` – consolidated RUS index (supports filters)
+- `GET /index_consolidated_amd` – consolidated AMD index (supports filters)
+- `GET /index_ingestion_amd` – ingestion AMD index (supports filters)
+- `GET /index_ingestion_rus` – ingestion RUS index (supports filters)
 - `GET /search/:table/:term` – ILIKE against JSON text
 
 Response shape
@@ -229,6 +234,10 @@ Examples:
 GET /ingestion_volume?ru=network&ru_status=Existing&limit=50
 GET /annual_charge?amd_num=125.1&created_from=2025-01-01T00:00:00.000Z
 GET /consolidated_rate?order_by=updated_at&order_dir=ASC&offset=100
+GET /index_consolidated_rus?amd_num=131.1
+GET /index_consolidated_amd?ru=network
+GET /index_ingestion_amd?ru_status=Existing&limit=50
+GET /index_ingestion_rus?amd_num=200.5&order_by=created_at
 ```
 
 ## Troubleshooting

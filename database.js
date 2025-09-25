@@ -32,6 +32,38 @@ CREATE TABLE IF NOT EXISTS consolidated_volume (
 CREATE INDEX IF NOT EXISTS idx_consolidated_charge_created_at ON consolidated_charge(created_at);
 CREATE INDEX IF NOT EXISTS idx_consolidated_rate_created_at ON consolidated_rate(created_at);
 CREATE INDEX IF NOT EXISTS idx_consolidated_volume_created_at ON consolidated_volume(created_at);
+-- Create index tables for consolidated and ingestion
+CREATE TABLE IF NOT EXISTS index_consolidated_amd (
+    id SERIAL PRIMARY KEY,
+    data JSONB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_index_consolidated_amd_created_at ON index_consolidated_amd(created_at);
+
+CREATE TABLE IF NOT EXISTS index_consolidated_rus (
+    id SERIAL PRIMARY KEY,
+    data JSONB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_index_consolidated_rus_created_at ON index_consolidated_rus(created_at);
+
+CREATE TABLE IF NOT EXISTS index_ingestion_amd (
+    id SERIAL PRIMARY KEY,
+    data JSONB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_index_ingestion_amd_created_at ON index_ingestion_amd(created_at);
+
+CREATE TABLE IF NOT EXISTS index_ingestion_rus (
+    id SERIAL PRIMARY KEY,
+    data JSONB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_index_ingestion_rus_created_at ON index_ingestion_rus(created_at);
 -- Create ingestion_volume table
 CREATE TABLE IF NOT EXISTS ingestion_volume (
     id SERIAL PRIMARY KEY,
@@ -127,6 +159,24 @@ async function loadDataIfEmpty() {
         const annualChargeCount = await pool.query('SELECT COUNT(*) FROM annual_charge');
         if (parseInt(annualChargeCount.rows[0].count) === 0) {
             await loadAnnualCharge();
+        }
+
+        // New: index tables
+        const indexConAmdCount = await pool.query('SELECT COUNT(*) FROM index_consolidated_amd');
+        if (parseInt(indexConAmdCount.rows[0].count) === 0) {
+            await loadIndexConsolidatedAmd();
+        }
+        const indexConRusCount = await pool.query('SELECT COUNT(*) FROM index_consolidated_rus');
+        if (parseInt(indexConRusCount.rows[0].count) === 0) {
+            await loadIndexConsolidatedRus();
+        }
+        const indexIngAmdCount = await pool.query('SELECT COUNT(*) FROM index_ingestion_amd');
+        if (parseInt(indexIngAmdCount.rows[0].count) === 0) {
+            await loadIndexIngestionAmd();
+        }
+        const indexIngRusCount = await pool.query('SELECT COUNT(*) FROM index_ingestion_rus');
+        if (parseInt(indexIngRusCount.rows[0].count) === 0) {
+            await loadIndexIngestionRus();
         }
 
         console.log('✅ Data loading completed');
@@ -302,6 +352,66 @@ async function loadAnnualCharge() {
         console.log(`✅ Loaded ${rows.length} records into annual_charge table`);
     } catch (error) {
         console.warn('⚠️ Could not load annual_charge.json:', error.message);
+    }
+}
+
+// Load Index: Consolidated AMD
+async function loadIndexConsolidatedAmd() {
+    try {
+        const inputDir = path.join(__dirname, 'input_file');
+        const content = await fs.readFile(path.join(inputDir, 'index_consolidated_amd.json'), 'utf8');
+        const rows = JSON.parse(content);
+        for (const record of rows) {
+            await pool.query('INSERT INTO index_consolidated_amd (data) VALUES ($1)', [JSON.stringify(record)]);
+        }
+        console.log(`✅ Loaded ${rows.length} records into index_consolidated_amd table`);
+    } catch (error) {
+        console.warn('⚠️ Could not load index_consolidated_amd.json:', error.message);
+    }
+}
+
+// Load Index: Consolidated RUS
+async function loadIndexConsolidatedRus() {
+    try {
+        const inputDir = path.join(__dirname, 'input_file');
+        const content = await fs.readFile(path.join(inputDir, 'index_consolidated_rus.json'), 'utf8');
+        const rows = JSON.parse(content);
+        for (const record of rows) {
+            await pool.query('INSERT INTO index_consolidated_rus (data) VALUES ($1)', [JSON.stringify(record)]);
+        }
+        console.log(`✅ Loaded ${rows.length} records into index_consolidated_rus table`);
+    } catch (error) {
+        console.warn('⚠️ Could not load index_consolidated_rus.json:', error.message);
+    }
+}
+
+// Load Index: Ingestion AMD
+async function loadIndexIngestionAmd() {
+    try {
+        const inputDir = path.join(__dirname, 'input_file');
+        const content = await fs.readFile(path.join(inputDir, 'index_ingestion_amd.json'), 'utf8');
+        const rows = JSON.parse(content);
+        for (const record of rows) {
+            await pool.query('INSERT INTO index_ingestion_amd (data) VALUES ($1)', [JSON.stringify(record)]);
+        }
+        console.log(`✅ Loaded ${rows.length} records into index_ingestion_amd table`);
+    } catch (error) {
+        console.warn('⚠️ Could not load index_ingestion_amd.json:', error.message);
+    }
+}
+
+// Load Index: Ingestion RUS
+async function loadIndexIngestionRus() {
+    try {
+        const inputDir = path.join(__dirname, 'input_file');
+        const content = await fs.readFile(path.join(inputDir, 'index_ingestion_rus.json'), 'utf8');
+        const rows = JSON.parse(content);
+        for (const record of rows) {
+            await pool.query('INSERT INTO index_ingestion_rus (data) VALUES ($1)', [JSON.stringify(record)]);
+        }
+        console.log(`✅ Loaded ${rows.length} records into index_ingestion_rus table`);
+    } catch (error) {
+        console.warn('⚠️ Could not load index_ingestion_rus.json:', error.message);
     }
 }
 
