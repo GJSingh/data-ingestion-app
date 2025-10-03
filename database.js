@@ -96,6 +96,15 @@ CREATE TABLE IF NOT EXISTS annual_charge (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_annual_charge_created_at ON annual_charge(created_at);
+
+-- Create calendar_dict table
+CREATE TABLE IF NOT EXISTS calendar_dict (
+    id SERIAL PRIMARY KEY,
+    data JSONB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_calendar_dict_created_at ON calendar_dict(created_at);
 `;
 
 // Function to initialize database
@@ -179,6 +188,12 @@ async function loadDataIfEmpty() {
             await loadIndexIngestionRus();
         }
 
+        // New: calendar_dict
+        const calendarDictCount = await pool.query('SELECT COUNT(*) FROM calendar_dict');
+        if (parseInt(calendarDictCount.rows[0].count) === 0) {
+            await loadCalendarDict();
+        }
+
         console.log('✅ Data loading completed');
     } catch (error) {
         console.error('❌ Error loading data:', error);
@@ -243,10 +258,10 @@ async function loadConsolidatedCharge() {
         const chargeData = JSON.parse(chargeContent);
         
         for (const record of chargeData) {
-            const normalized = normalizeConsolidatedRow(record);
+            // New structure is already clean, no normalization needed
             await pool.query(
                 'INSERT INTO consolidated_charge (data) VALUES ($1)',
-                [JSON.stringify(normalized)]
+                [JSON.stringify(record)]
             );
         }
         console.log(`✅ Loaded ${chargeData.length} records into consolidated_charge table`);
@@ -263,10 +278,10 @@ async function loadConsolidatedRate() {
         const rateData = JSON.parse(rateContent);
         
         for (const record of rateData) {
-            const normalized = normalizeConsolidatedRow(record);
+            // New structure is already clean, no normalization needed
             await pool.query(
                 'INSERT INTO consolidated_rate (data) VALUES ($1)',
-                [JSON.stringify(normalized)]
+                [JSON.stringify(record)]
             );
         }
         console.log(`✅ Loaded ${rateData.length} records into consolidated_rate table`);
@@ -283,10 +298,10 @@ async function loadConsolidatedVolume() {
         const volumeData = JSON.parse(volumeContent);
         
         for (const record of volumeData) {
-            const normalized = normalizeConsolidatedRow(record);
+            // New structure is already clean, no normalization needed
             await pool.query(
                 'INSERT INTO consolidated_volume (data) VALUES ($1)',
-                [JSON.stringify(normalized)]
+                [JSON.stringify(record)]
             );
         }
         console.log(`✅ Loaded ${volumeData.length} records into consolidated_volume table`);
@@ -415,6 +430,21 @@ async function loadIndexIngestionRus() {
     }
 }
 
+// Load Calendar Dict data
+async function loadCalendarDict() {
+    try {
+        const inputDir = path.join(__dirname, 'input_file');
+        const content = await fs.readFile(path.join(inputDir, 'calendar_dict.json'), 'utf8');
+        const rows = JSON.parse(content);
+        for (const record of rows) {
+            await pool.query('INSERT INTO calendar_dict (data) VALUES ($1)', [JSON.stringify(record)]);
+        }
+        console.log(`✅ Loaded ${rows.length} records into calendar_dict table`);
+    } catch (error) {
+        console.warn('⚠️ Could not load calendar_dict.json:', error.message);
+    }
+}
+
 // Function to get all records from a table
 async function getAllRecords(tableName) {
     try {
@@ -462,12 +492,72 @@ function buildFilterQuery(tableName, filters, pagination) {
         values.push(`%${filters.amd_num}%`);
     }
     if (filters.ru) {
-        where.push(`(data->>'ru') ILIKE $${i++}`);
-        values.push(`%${filters.ru}%`);
+        // Handle multiple values for ru parameter
+        if (Array.isArray(filters.ru)) {
+            const ruConditions = [];
+            for (const ruValue of filters.ru) {
+                ruConditions.push(`(data->>'ru') ILIKE $${i++}`);
+                values.push(`%${ruValue}%`);
+            }
+            where.push(`(${ruConditions.join(' OR ')})`);
+        } else {
+            where.push(`(data->>'ru') ILIKE $${i++}`);
+            values.push(`%${filters.ru}%`);
+        }
     }
     if (filters.ru_status) {
-        where.push(`(data->>'ru_status') ILIKE $${i++}`);
-        values.push(`%${filters.ru_status}%`);
+        // Handle multiple values for ru_status parameter
+        if (Array.isArray(filters.ru_status)) {
+            const ruStatusConditions = [];
+            for (const statusValue of filters.ru_status) {
+                ruStatusConditions.push(`(data->>'ru_status') ILIKE $${i++}`);
+                values.push(`%${statusValue}%`);
+            }
+            where.push(`(${ruStatusConditions.join(' OR ')})`);
+        } else {
+            where.push(`(data->>'ru_status') ILIKE $${i++}`);
+            values.push(`%${filters.ru_status}%`);
+        }
+    }
+    if (filters.ru_service_cat) {
+        // Handle multiple values for ru_service_cat parameter
+        if (Array.isArray(filters.ru_service_cat)) {
+            const ruServiceCatConditions = [];
+            for (const serviceCatValue of filters.ru_service_cat) {
+                ruServiceCatConditions.push(`(data->>'ru_service_cat') ILIKE $${i++}`);
+                values.push(`%${serviceCatValue}%`);
+            }
+            where.push(`(${ruServiceCatConditions.join(' OR ')})`);
+        } else {
+            where.push(`(data->>'ru_service_cat') ILIKE $${i++}`);
+            values.push(`%${filters.ru_service_cat}%`);
+        }
+    }
+    if (filters.contract_month !== undefined) {
+        where.push(`(data->>'contract_month')::numeric = $${i++}`);
+        values.push(filters.contract_month);
+    }
+    if (filters.contract_year !== undefined) {
+        where.push(`(data->>'contract_year')::numeric = $${i++}`);
+        values.push(filters.contract_year);
+    }
+    if (filters.calendar_month) {
+        // Handle multiple values for calendar_month parameter
+        if (Array.isArray(filters.calendar_month)) {
+            const calendarMonthConditions = [];
+            for (const monthValue of filters.calendar_month) {
+                calendarMonthConditions.push(`(data->>'calendar_month') ILIKE $${i++}`);
+                values.push(`%${monthValue}%`);
+            }
+            where.push(`(${calendarMonthConditions.join(' OR ')})`);
+        } else {
+            where.push(`(data->>'calendar_month') ILIKE $${i++}`);
+            values.push(`%${filters.calendar_month}%`);
+        }
+    }
+    if (filters.calendar_year !== undefined) {
+        where.push(`(data->>'calendar_year')::numeric = $${i++}`);
+        values.push(filters.calendar_year);
     }
     if (filters.created_from) {
         where.push(`created_at >= $${i++}`);

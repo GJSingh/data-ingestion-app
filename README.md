@@ -18,6 +18,7 @@ Tables created automatically on startup:
 - `consolidated_charge (id SERIAL, data JSONB, created_at TIMESTAMP, updated_at TIMESTAMP)`
 - `consolidated_rate (id SERIAL, data JSONB, created_at TIMESTAMP, updated_at TIMESTAMP)`
 - `consolidated_volume (id SERIAL, data JSONB, created_at TIMESTAMP, updated_at TIMESTAMP)`
+- `calendar_dict (id SERIAL, data JSONB, created_at TIMESTAMP, updated_at TIMESTAMP)`
 
 Indexes on `created_at` for each table.
 
@@ -105,9 +106,10 @@ This starts:
 
 - API health: http://localhost:3000/health
 - Consolidated data: http://localhost:3000/consolidated_charge, `/consolidated_rate`, `/consolidated_volume`
+- Calendar data: http://localhost:3000/calendar_dict
 - Ingestion/annual data: http://localhost:3000/ingestion_volume, `/ingestion_charge`, `/ingestion_rate`, `/annual_charge`
 - Index endpoints: `/index_consolidated_rus`, `/index_consolidated_amd`, `/index_ingestion_amd`, `/index_ingestion_rus`
-- Search: `GET /search/:table/:term` (tables: `consolidated_charge`, `consolidated_rate`, `consolidated_volume`, `ingestion_volume`, `ingestion_charge`, `ingestion_rate`, `annual_charge`)
+- Search: `GET /search/:table/:term` (tables: `consolidated_charge`, `consolidated_rate`, `consolidated_volume`, `calendar_dict`, `ingestion_volume`, `ingestion_charge`, `ingestion_rate`, `annual_charge`)
 
 3. Logs
 
@@ -186,6 +188,7 @@ SELECT id, created_at, data FROM ingestion_volume LIMIT 5;
 - `GET /consolidated_charge` – consolidated charge (supports filters)
 - `GET /consolidated_rate` – consolidated rate (supports filters)
 - `GET /consolidated_volume` – consolidated volume (supports filters)
+- `GET /calendar_dict` – calendar dictionary (supports filters)
 - `GET /ingestion_volume` – ingestion volume (supports filters)
 - `GET /ingestion_charge` – ingestion charge (supports filters)
 - `GET /ingestion_rate` – ingestion rate (supports filters)
@@ -219,8 +222,13 @@ Response shape
 All list endpoints accept these optional query parameters:
 
 - `amd_num` (partial match)
-- `ru` (partial match)
-- `ru_status` (partial match)
+- `ru` (partial match, supports multiple values as JSON array)
+- `ru_status` (partial match, supports multiple values as JSON array)
+- `ru_service_cat` (partial match, supports multiple values as JSON array) - for consolidated endpoints
+- `contract_month` (exact match) - for calendar_dict endpoint
+- `contract_year` (exact match) - for calendar_dict endpoint
+- `calendar_month` (partial match, supports multiple values as JSON array) - for calendar_dict endpoint
+- `calendar_year` (exact match) - for calendar_dict endpoint
 - `created_from`, `created_to` (ISO date)
 - `updated_from`, `updated_to` (ISO date)
 - `limit` (default 100, max 1000)
@@ -228,17 +236,42 @@ All list endpoints accept these optional query parameters:
 - `order_by` (`created_at` or `updated_at`, default `created_at`)
 - `order_dir` (`ASC` or `DESC`, default `DESC`)
 
+#### Multi-Value Filtering
+
+The `ru`, `ru_status`, `ru_service_cat`, and `calendar_month` parameters support multiple values by passing a JSON array. This allows you to filter for records that match ANY of the provided values (OR logic).
+
 Examples:
 
 ```
+# Single value filtering (existing functionality)
 GET /ingestion_volume?ru=network&ru_status=Existing&limit=50
 GET /annual_charge?amd_num=125.1&created_from=2025-01-01T00:00:00.000Z
 GET /consolidated_rate?order_by=updated_at&order_dir=ASC&offset=100
-GET /index_consolidated_rus?amd_num=131.1
-GET /index_consolidated_amd?ru=network
-GET /index_ingestion_amd?ru_status=Existing&limit=50
-GET /index_ingestion_rus?amd_num=200.5&order_by=created_at
+
+# Multi-value filtering (new functionality)
+GET /ingestion_volume?ru=["network", "credit", "debit"]
+GET /consolidated_charge?ru_status=["Existing", "New"]&ru_service_cat=["RU category 01", "RU category 02"]&limit=100
+GET /annual_charge?ru=["network", "credit"]&ru_status=["Existing"]
+GET /calendar_dict?calendar_month=["October", "November", "December"]&calendar_year=2021
+
+# URL encoded examples (for actual HTTP requests)
+GET /ingestion_volume?ru=%5B%22network%22%2C%22credit%22%2C%22debit%22%5D
+GET /consolidated_charge?ru_status=%5B%22Existing%22%2C%22New%22%5D&ru_service_cat=%5B%22RU%20category%2001%22%2C%22RU%20category%2002%22%5D
+GET /calendar_dict?calendar_month=%5B%22October%22%2C%22November%22%2C%22December%22%5D
+
+# Other endpoints with multi-value support
+GET /index_consolidated_rus?amd_num=131.1&ru=["network", "credit"]
+GET /index_consolidated_amd?ru=["network", "debit"]
+GET /index_ingestion_amd?ru_status=["Existing", "New"]&limit=50
+GET /index_ingestion_rus?amd_num=200.5&ru=["credit", "debit"]
+
+# Calendar dict specific examples
+GET /calendar_dict?contract_month=1&contract_year=1
+GET /calendar_dict?calendar_year=2021&limit=12
+GET /calendar_dict?calendar_month=["January", "February"]&contract_year=1
 ```
+
+**Note:** When using multi-value filters in a browser or HTTP client, remember to URL-encode the JSON array. The examples above show both the readable format and the URL-encoded format.
 
 ## Troubleshooting
 
