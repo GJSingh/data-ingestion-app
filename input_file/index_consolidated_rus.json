@@ -2,11 +2,13 @@
     {
         "amd_num":131.1,
         "amd_start_date":"2025-07-01T00:00:00.000",
+		"last_sign_date":"2024-12-18T00:00:00.000",
         "ru": "Migrate Images (Credit)"
     },
     {
         "amd_num": 131.1,
         "amd_start_date": "2025-07-01T00:00:00.000",
+		"last_sign_date":"2024-12-11T00:00:00.000",
         "ru": "Migrate Images (Price"
     }
 ]
