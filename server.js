@@ -84,7 +84,7 @@ app.get('/health', async (req, res) => {
 // Consolidated Charge endpoint
 app.get('/consolidated_charge', async (req, res) => {
     try {
-        const { amd_num, ru, ru_status, ru_service_cat, created_from, created_to, updated_from, updated_to, limit, offset, order_by, order_dir } = req.query;
+        const { amd_num, ru, ru_status, ru_service_cat, created_from, created_to, updated_from, updated_to, last_sign_date, last_sign_date_from, last_sign_date_to, limit, offset, order_by, order_dir } = req.query;
         const filters = {
             amd_num,
             ru: parseArrayParam(ru),
@@ -93,7 +93,10 @@ app.get('/consolidated_charge', async (req, res) => {
             created_from,
             created_to,
             updated_from,
-            updated_to
+            updated_to,
+            last_sign_date,
+            last_sign_date_from,
+            last_sign_date_to
         };
         const { count, rows } = await queryWithFilters('consolidated_charge', filters, { limit, offset, order_by, order_dir });
         res.json({ success: true, count, data: rows, timestamp: new Date().toISOString() });
@@ -105,7 +108,7 @@ app.get('/consolidated_charge', async (req, res) => {
 // Consolidated Rate endpoint
 app.get('/consolidated_rate', async (req, res) => {
     try {
-        const { amd_num, ru, ru_status, ru_service_cat, created_from, created_to, updated_from, updated_to, limit, offset, order_by, order_dir } = req.query;
+        const { amd_num, ru, ru_status, ru_service_cat, created_from, created_to, updated_from, updated_to, last_sign_date, last_sign_date_from, last_sign_date_to, limit, offset, order_by, order_dir } = req.query;
         const filters = {
             amd_num,
             ru: parseArrayParam(ru),
@@ -114,7 +117,10 @@ app.get('/consolidated_rate', async (req, res) => {
             created_from,
             created_to,
             updated_from,
-            updated_to
+            updated_to,
+            last_sign_date,
+            last_sign_date_from,
+            last_sign_date_to
         };
         const { count, rows } = await queryWithFilters('consolidated_rate', filters, { limit, offset, order_by, order_dir });
         res.json({ success: true, count, data: rows, timestamp: new Date().toISOString() });
@@ -126,7 +132,7 @@ app.get('/consolidated_rate', async (req, res) => {
 // Consolidated Volume endpoint
 app.get('/consolidated_volume', async (req, res) => {
     try {
-        const { amd_num, ru, ru_status, ru_service_cat, created_from, created_to, updated_from, updated_to, limit, offset, order_by, order_dir } = req.query;
+        const { amd_num, ru, ru_status, ru_service_cat, created_from, created_to, updated_from, updated_to, last_sign_date, last_sign_date_from, last_sign_date_to, limit, offset, order_by, order_dir } = req.query;
         const filters = {
             amd_num,
             ru: parseArrayParam(ru),
@@ -135,7 +141,10 @@ app.get('/consolidated_volume', async (req, res) => {
             created_from,
             created_to,
             updated_from,
-            updated_to
+            updated_to,
+            last_sign_date,
+            last_sign_date_from,
+            last_sign_date_to
         };
         const { count, rows } = await queryWithFilters('consolidated_volume', filters, { limit, offset, order_by, order_dir });
         res.json({ success: true, count, data: rows, timestamp: new Date().toISOString() });
@@ -168,7 +177,7 @@ app.get('/calendar_dict', async (req, res) => {
 // Ingestion Volume endpoint
 app.get('/ingestion_volume', async (req, res) => {
     try {
-        const { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to, limit, offset, order_by, order_dir } = req.query;
+        const { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to, last_sign_date, last_sign_date_from, last_sign_date_to, limit, offset, order_by, order_dir } = req.query;
         const filters = {
             amd_num,
             ru: parseArrayParam(ru),
@@ -176,7 +185,10 @@ app.get('/ingestion_volume', async (req, res) => {
             created_from,
             created_to,
             updated_from,
-            updated_to
+            updated_to,
+            last_sign_date,
+            last_sign_date_from,
+            last_sign_date_to
         };
         const { count, rows } = await queryWithFilters('ingestion_volume', filters, { limit, offset, order_by, order_dir });
         res.json({ success: true, count, data: rows, timestamp: new Date().toISOString() });
@@ -188,7 +200,7 @@ app.get('/ingestion_volume', async (req, res) => {
 // Ingestion Charge endpoint
 app.get('/ingestion_charge', async (req, res) => {
     try {
-        const { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to, limit, offset, order_by, order_dir } = req.query;
+        const { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to, last_sign_date, last_sign_date_from, last_sign_date_to, limit, offset, order_by, order_dir } = req.query;
         const filters = {
             amd_num,
             ru: parseArrayParam(ru),
@@ -196,7 +208,10 @@ app.get('/ingestion_charge', async (req, res) => {
             created_from,
             created_to,
             updated_from,
-            updated_to
+            updated_to,
+            last_sign_date,
+            last_sign_date_from,
+            last_sign_date_to
         };
         const { count, rows } = await queryWithFilters('ingestion_charge', filters, { limit, offset, order_by, order_dir });
         res.json({ success: true, count, data: rows, timestamp: new Date().toISOString() });
@@ -208,7 +223,7 @@ app.get('/ingestion_charge', async (req, res) => {
 // Ingestion Rate endpoint
 app.get('/ingestion_rate', async (req, res) => {
     try {
-        const { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to, limit, offset, order_by, order_dir } = req.query;
+        const { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to, last_sign_date, last_sign_date_from, last_sign_date_to, limit, offset, order_by, order_dir } = req.query;
         const filters = {
             amd_num,
             ru: parseArrayParam(ru),
@@ -216,7 +231,10 @@ app.get('/ingestion_rate', async (req, res) => {
             created_from,
             created_to,
             updated_from,
-            updated_to
+            updated_to,
+            last_sign_date,
+            last_sign_date_from,
+            last_sign_date_to
         };
         const { count, rows } = await queryWithFilters('ingestion_rate', filters, { limit, offset, order_by, order_dir });
         res.json({ success: true, count, data: rows, timestamp: new Date().toISOString() });
@@ -228,7 +246,7 @@ app.get('/ingestion_rate', async (req, res) => {
 // Annual Charge endpoint
 app.get('/annual_charge', async (req, res) => {
     try {
-        const { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to, limit, offset, order_by, order_dir } = req.query;
+        const { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to, last_sign_date, last_sign_date_from, last_sign_date_to, limit, offset, order_by, order_dir } = req.query;
         const filters = {
             amd_num,
             ru: parseArrayParam(ru),
@@ -236,7 +254,10 @@ app.get('/annual_charge', async (req, res) => {
             created_from,
             created_to,
             updated_from,
-            updated_to
+            updated_to,
+            last_sign_date,
+            last_sign_date_from,
+            last_sign_date_to
         };
         const { count, rows } = await queryWithFilters('annual_charge', filters, { limit, offset, order_by, order_dir });
         res.json({ success: true, count, data: rows, timestamp: new Date().toISOString() });
@@ -248,7 +269,7 @@ app.get('/annual_charge', async (req, res) => {
 // Index Consolidated RUS endpoint
 app.get('/index_consolidated_rus', async (req, res) => {
     try {
-        const { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to, limit, offset, order_by, order_dir } = req.query;
+        const { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to, last_sign_date, last_sign_date_from, last_sign_date_to, limit, offset, order_by, order_dir } = req.query;
         const filters = {
             amd_num,
             ru: parseArrayParam(ru),
@@ -256,7 +277,10 @@ app.get('/index_consolidated_rus', async (req, res) => {
             created_from,
             created_to,
             updated_from,
-            updated_to
+            updated_to,
+            last_sign_date,
+            last_sign_date_from,
+            last_sign_date_to
         };
         const { count, rows } = await queryWithFilters('index_consolidated_rus', filters, { limit, offset, order_by, order_dir });
         res.json({ success: true, count, data: rows, timestamp: new Date().toISOString() });
@@ -268,7 +292,7 @@ app.get('/index_consolidated_rus', async (req, res) => {
 // Index Consolidated AMD endpoint
 app.get('/index_consolidated_amd', async (req, res) => {
     try {
-        const { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to, limit, offset, order_by, order_dir } = req.query;
+        const { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to, last_sign_date, last_sign_date_from, last_sign_date_to, limit, offset, order_by, order_dir } = req.query;
         const filters = {
             amd_num,
             ru: parseArrayParam(ru),
@@ -276,7 +300,10 @@ app.get('/index_consolidated_amd', async (req, res) => {
             created_from,
             created_to,
             updated_from,
-            updated_to
+            updated_to,
+            last_sign_date,
+            last_sign_date_from,
+            last_sign_date_to
         };
         const { count, rows } = await queryWithFilters('index_consolidated_amd', filters, { limit, offset, order_by, order_dir });
         res.json({ success: true, count, data: rows, timestamp: new Date().toISOString() });
@@ -288,7 +315,7 @@ app.get('/index_consolidated_amd', async (req, res) => {
 // Index Ingestion AMD endpoint
 app.get('/index_ingestion_amd', async (req, res) => {
     try {
-        const { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to, limit, offset, order_by, order_dir } = req.query;
+        const { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to, last_sign_date, last_sign_date_from, last_sign_date_to, limit, offset, order_by, order_dir } = req.query;
         const filters = {
             amd_num,
             ru: parseArrayParam(ru),
@@ -296,7 +323,10 @@ app.get('/index_ingestion_amd', async (req, res) => {
             created_from,
             created_to,
             updated_from,
-            updated_to
+            updated_to,
+            last_sign_date,
+            last_sign_date_from,
+            last_sign_date_to
         };
         const { count, rows } = await queryWithFilters('index_ingestion_amd', filters, { limit, offset, order_by, order_dir });
         res.json({ success: true, count, data: rows, timestamp: new Date().toISOString() });
@@ -308,7 +338,7 @@ app.get('/index_ingestion_amd', async (req, res) => {
 // Index Ingestion RUS endpoint
 app.get('/index_ingestion_rus', async (req, res) => {
     try {
-        const { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to, limit, offset, order_by, order_dir } = req.query;
+        const { amd_num, ru, ru_status, created_from, created_to, updated_from, updated_to, last_sign_date, last_sign_date_from, last_sign_date_to, limit, offset, order_by, order_dir } = req.query;
         const filters = {
             amd_num,
             ru: parseArrayParam(ru),
@@ -316,7 +346,10 @@ app.get('/index_ingestion_rus', async (req, res) => {
             created_from,
             created_to,
             updated_from,
-            updated_to
+            updated_to,
+            last_sign_date,
+            last_sign_date_from,
+            last_sign_date_to
         };
         const { count, rows } = await queryWithFilters('index_ingestion_rus', filters, { limit, offset, order_by, order_dir });
         res.json({ success: true, count, data: rows, timestamp: new Date().toISOString() });

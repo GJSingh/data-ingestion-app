@@ -575,6 +575,19 @@ function buildFilterQuery(tableName, filters, pagination) {
         where.push(`updated_at <= $${i++}`);
         values.push(filters.updated_to);
     }
+    if (filters.last_sign_date_from) {
+        where.push(`(data->>'last_sign_date')::timestamp >= $${i++}`);
+        values.push(filters.last_sign_date_from);
+    }
+    if (filters.last_sign_date_to) {
+        where.push(`(data->>'last_sign_date')::timestamp <= $${i++}`);
+        values.push(filters.last_sign_date_to);
+    }
+    if (filters.last_sign_date) {
+        // Handle exact match for last_sign_date
+        where.push(`(data->>'last_sign_date')::date = $${i++}`);
+        values.push(filters.last_sign_date);
+    }
 
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
     const limit = Math.min(Math.max(parseInt(pagination.limit || 100, 10), 1), 1000);
