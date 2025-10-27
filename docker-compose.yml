@@ -38,7 +38,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     volumes:
-      - ./input_file:/app/input_file:ro
+      - ./input_file:/app/input_file
 
 volumes:
   postgres_data:
